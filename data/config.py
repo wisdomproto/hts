@@ -9,7 +9,9 @@ load_dotenv(env_path)
 FRED_API_KEY = os.getenv("FRED_API_KEY", "")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-DB_PATH = str(Path(__file__).parent.parent / "db" / "hts.db")
+# Railway: DB_DIR env → persistent volume mount point
+_db_dir = os.getenv("DB_DIR", str(Path(__file__).parent.parent / "db"))
+DB_PATH = str(Path(_db_dir) / "hts.db")
 
 # FRED Series Configuration
 FRED_SERIES = {
