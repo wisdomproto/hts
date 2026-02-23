@@ -21,7 +21,7 @@ def summarize_articles(limit: int = 20):
         return 0
 
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-2.0-flash-lite")
+    model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
