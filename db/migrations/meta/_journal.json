@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1771766701304,
+      "tag": "0000_cynical_greymalkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771768835581,
+      "tag": "0001_regular_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771770531125,
+      "tag": "0002_dizzy_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771774147147,
+      "tag": "0003_fancy_harrier",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771777703396,
+      "tag": "0004_late_magus",
+      "breakpoints": true
+    }
+  ]
+}

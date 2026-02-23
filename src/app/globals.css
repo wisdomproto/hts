@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  /* Background layers */
+  --color-bg-base: oklch(0.13 0.02 255);
+  --color-bg-surface: oklch(0.16 0.018 255);
+  --color-bg-elevated: oklch(0.19 0.015 255);
+  --color-bg-overlay: oklch(0.22 0.013 255);
+
+  /* Border */
+  --color-border-subtle: oklch(0.28 0.01 255);
+  --color-border-default: oklch(0.35 0.008 255);
+
+  /* Text */
+  --color-text-primary: oklch(0.95 0.01 250);
+  --color-text-secondary: oklch(0.7 0.02 250);
+  --color-text-muted: oklch(0.55 0.015 250);
+
+  /* Accent */
+  --color-accent: oklch(0.62 0.2 255);
+  --color-accent-hover: oklch(0.68 0.18 255);
+  --color-accent-purple: oklch(0.58 0.22 290);
+
+  /* Financial */
+  --color-positive: oklch(0.65 0.2 155);
+  --color-negative: oklch(0.6 0.22 25);
+  --color-warning: oklch(0.7 0.18 70);
+
+  /* Regime colors */
+  --color-regime-goldilocks: oklch(0.65 0.2 155);
+  --color-regime-disinflation: oklch(0.65 0.15 190);
+  --color-regime-inflation-boom: oklch(0.7 0.18 70);
+  --color-regime-overheating: oklch(0.6 0.2 35);
+  --color-regime-stagflation-lite: oklch(0.55 0.2 310);
+  --color-regime-stagflation: oklch(0.5 0.22 15);
+  --color-regime-reflation: oklch(0.55 0.2 265);
+  --color-regime-deflation: oklch(0.45 0.02 255);
+
+  /* Asset class colors */
+  --color-asset-stocks: oklch(0.62 0.2 255);
+  --color-asset-bonds: oklch(0.58 0.22 290);
+  --color-asset-realestate: oklch(0.7 0.18 70);
+  --color-asset-commodities: oklch(0.68 0.18 50);
+  --color-asset-crypto: oklch(0.65 0.15 195);
+  --color-asset-cash: oklch(0.55 0.015 250);
+}
+
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  :root:not(.dark) {
+    --color-bg-base: oklch(0.98 0.005 250);
+    --color-bg-surface: oklch(1 0 0);
+    --color-bg-elevated: oklch(0.96 0.005 250);
+    --color-bg-overlay: oklch(0.94 0.005 250);
+    --color-border-subtle: oklch(0.9 0.005 250);
+    --color-border-default: oklch(0.85 0.005 250);
+    --color-text-primary: oklch(0.15 0.02 255);
+    --color-text-secondary: oklch(0.45 0.015 250);
+    --color-text-muted: oklch(0.6 0.01 250);
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  --color-bg-base: oklch(0.98 0.005 250);
+  --color-bg-surface: oklch(1 0 0);
+  --color-bg-elevated: oklch(0.96 0.005 250);
+  --color-bg-overlay: oklch(0.94 0.005 250);
+  --color-border-subtle: oklch(0.9 0.005 250);
+  --color-border-default: oklch(0.85 0.005 250);
+  --color-text-primary: oklch(0.15 0.02 255);
+  --color-text-secondary: oklch(0.45 0.015 250);
+  --color-text-muted: oklch(0.6 0.01 250);
+}
+
+/* Glass morphism utility */
+.glass {
+  background: oklch(0.16 0.018 255 / 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid oklch(0.35 0.01 255 / 0.3);
+}
+
+.light .glass {
+  background: oklch(1 0 0 / 0.7);
+  border: 1px solid oklch(0.85 0.005 250 / 0.5);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.35 0.01 255 / 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.45 0.01 255 / 0.7);
+}
+
+/* Tabular nums for financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+body {
+  background: var(--color-bg-base);
+  color: var(--color-text-primary);
+}
