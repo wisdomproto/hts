@@ -31,12 +31,19 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy standalone output (includes server.js, node_modules, db/, data/)
+# Install Python + pip for data pipeline
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install --break-system-packages fredapi pandas feedparser requests google-generativeai python-dotenv
+
+# Copy standalone output (includes server.js, node_modules)
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Copy startup script
 COPY --from=builder /app/start.mjs ./start.mjs
+
+# Copy Python data pipeline scripts
+COPY --from=builder /app/data ./data
 
 EXPOSE 3000
 ENV PORT=3000

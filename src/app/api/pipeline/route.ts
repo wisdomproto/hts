@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@db/index";
 import { pipelineRuns } from "@db/schema";
 import { desc } from "drizzle-orm";
@@ -22,14 +22,23 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const pythonScript = path.join(process.cwd(), "data", "run_pipeline.py");
+    const dataDir = path.join(process.cwd(), "data");
+    const pythonScript = path.join(dataDir, "run_pipeline.py");
 
-    // Run pipeline asynchronously
+    // Pass environment variables to Python subprocess
+    const env = {
+      ...process.env,
+      FRED_API_KEY: process.env.FRED_API_KEY || "",
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+      DB_DIR: process.env.DB_DIR || "",
+    };
+
     const { stdout, stderr } = await execAsync(`python3 "${pythonScript}"`, {
-      cwd: path.join(process.cwd(), "data"),
+      cwd: dataDir,
       timeout: 300000, // 5 min timeout
+      env,
     });
 
     return NextResponse.json({
