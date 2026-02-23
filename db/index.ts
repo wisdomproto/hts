@@ -4,16 +4,31 @@ import * as schema from "./schema";
 import path from "path";
 import fs from "fs";
 
-// Railway: DB_DIR env → persistent volume mount point
-const dbDir = process.env.DB_DIR || path.join(process.cwd(), "db");
+// Resolve DB directory: explicit env > /app/db (Docker) > cwd/db (local dev)
+function resolveDbDir(): string {
+  if (process.env.DB_DIR) return process.env.DB_DIR;
+  // In Docker/Railway, /app/db should exist
+  if (fs.existsSync("/app/db")) return "/app/db";
+  return path.join(process.cwd(), "db");
+}
+
+const dbDir = resolveDbDir();
 const dbPath = path.join(dbDir, "hts.db");
 
-// Ensure DB directory exists (Railway volume may mount empty dir)
+console.log("[DB] Resolved dbDir:", dbDir, "dbPath:", dbPath);
+
+// Ensure DB directory exists
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
+  console.log("[DB] Created directory:", dbDir);
 }
 
 const isNewDb = !fs.existsSync(dbPath);
+
+if (isNewDb) {
+  console.log("[DB] No database found, will create fresh one");
+}
+
 const sqlite = new Database(dbPath);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
@@ -123,7 +138,7 @@ if (isNewDb) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_liquidity_signals_unique ON liquidity_signals (signal_name, date);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_regimes_unique ON regimes (country, date);
   `);
-  console.log("[DB] Created fresh database with all tables at:", dbPath);
+  console.log("[DB] Created fresh database with all tables");
 }
 
 export const db = drizzle(sqlite, { schema });
