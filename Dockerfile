@@ -14,8 +14,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Create DB with schema via migrations
+# Run migrations to validate schema (DB will be created at runtime by start.mjs)
 RUN mkdir -p db && npx drizzle-kit migrate
+
+# Remove DB before build to prevent SQLITE_BUSY (47 workers accessing same file)
+RUN rm -f db/hts.db db/hts.db-wal db/hts.db-shm
 
 # Build Next.js standalone
 ENV NEXT_TELEMETRY_DISABLED=1
