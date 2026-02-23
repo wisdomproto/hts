@@ -20,14 +20,18 @@ if (!fs.existsSync(dbDir)) {
   console.log("[start] Created directory:", dbDir);
 }
 
-// If DB doesn't exist, create it with all tables
-if (!fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0) {
-  console.log("[start] Initializing fresh database...");
+// Always open DB and check if tables exist (not just file existence)
+const Database = require("better-sqlite3");
+const db = new Database(dbPath);
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
 
-  const Database = require("better-sqlite3");
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+const tableCheck = db.prepare(
+  "SELECT count(*) as cnt FROM sqlite_master WHERE type='table' AND name='computed_indicators'"
+).get();
+
+if (!tableCheck || tableCheck.cnt === 0) {
+  console.log("[start] Tables missing, creating schema...");
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS economic_data (
@@ -133,10 +137,12 @@ if (!fs.existsSync(dbPath) || fs.statSync(dbPath).size === 0) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_regimes_unique ON regimes (country, date);
   `);
 
-  db.close();
-  console.log("[start] Database initialized with all tables");
+  console.log("[start] Schema created successfully");
+} else {
+  console.log("[start] Tables already exist, skipping schema creation");
 }
 
-console.log("[start] DB dir contents:", fs.readdirSync(dbDir));
+db.close();
+
 console.log("[start] Starting Next.js server...");
 import("./server.js");
