@@ -1,4 +1,4 @@
-import { RegimeIndicator } from "@/components/regime/regime-indicator";
+import { RegimeExplorer } from "@/components/regime/regime-explorer";
 import { GlassCard } from "@/components/shared/glass-card";
 import { SectionHeader } from "@/components/shared/section-header";
 import { DashboardPortfolioTabs } from "@/components/dashboard/dashboard-portfolio-tabs";
@@ -50,15 +50,8 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* [A] Regime Indicator Hero */}
-      <RegimeIndicator
-        regimeId={regimeId}
-        liquiditySignals={liquiditySignals.map((s) => ({
-          name: s.signalName,
-          direction: s.direction as "easing" | "tightening",
-          value: s.rawValue ?? 0,
-        }))}
-      />
+      {/* [A] Regime Explorer — 8개 레짐 탭 */}
+      <RegimeExplorer currentRegimeId={regimeId} />
 
       {/* [B] Country Indicators — horizontal strip */}
       <div className="flex gap-3 overflow-x-auto pb-1">
