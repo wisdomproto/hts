@@ -55,6 +55,19 @@ hts/
 
 ## 아키텍처 핵심 원칙
 
+### AI 버블 1년 작전 시스템 (메인, Phase 1)
+- 제품의 메인 경험은 **5단계 버블 생애주기 작전**(멜트업 → 분산 → 붕괴 → 바닥 → 회복).
+  서사: "멜트업 라이드 → 탈출 → 폭락 매수". 투자 유니버스는 AI/테크 집중 + 헤지.
+- **단계 정의 SSOT**: `src/lib/stages.ts` → `STAGES`, `STAGE_ORDER`, `determineStage()`(순수 함수, 신호→단계 자동 판정)
+- **시그널 SSOT**: `src/lib/signals.ts` → `SIGNAL_DEFS`, `buildReading()`, `classifySignal()`
+  - 5개 신호: 나스닥 200일선 이격도, 고점 대비 낙폭(52주), VIX, 하이일드 스프레드, 유동성 배경(3-of-5 재활용)
+- **유니버스 SSOT**: `src/lib/campaign-universe.ts` → `ROLE_META`, `CAMPAIGN_ASSETS`(역할: semis/core_ai/broad/crypto/hedge_*)
+- **데이터 계층**: `db.ts`의 `getCampaignState()` = 설정 + `computeStageSignals()`(historical_prices/economic_data 기반) + `determineStage()` + 전환 이력
+- **DB**: `campaign`(작전 설정 단일 행), `stage_transitions`(전환 이력). 단계 배분/트리거는 DB가 아닌 TS(`stages.ts`)에 둠.
+- **페이지**: `/`(작전 본부), `/timeline`(5단계 로드맵), `/signals`(시그널 보드)
+- 기존 8레짐 엔진은 폐기하지 않고 **내부 유동성 배경 신호**로 재활용(`getRealTimeLiquidityState`).
+- Phase 2(예정): Python에서 QQQ/^VIX/NVDA/SMH 가격 수집 + 단계 자동화, 작전 설정 페이지.
+
 ### 레짐 판정 (Single Source of Truth)
 - **TypeScript**: `src/lib/regimes.ts` → `REGIME_NAMES`, `deriveRegimeName()`
   - `db.ts`와 `api/regime/route.ts`는 여기서 import

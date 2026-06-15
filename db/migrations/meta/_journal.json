@@ -36,6 +36,13 @@
       "when": 1771777703396,
       "tag": "0004_late_magus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781503137812,
+      "tag": "0005_dazzling_wraith",
+      "breakpoints": true
     }
   ]
 }

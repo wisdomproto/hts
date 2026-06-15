@@ -200,3 +200,28 @@ export const backtestSnapshots = sqliteTable("backtest_snapshots", {
   regimeName: text("regime_name"),
   drawdownPct: real("drawdown_pct"),
 });
+
+// ─── AI 버블 1년 작전 ─────────────────────────────────────────────────────────
+
+// 작전 설정 (단일 행). 단계 정의/배분은 src/lib/stages.ts(TS SSOT)에 있음.
+export const campaign = sqliteTable("campaign", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  totalCapital: real("total_capital").notNull().default(100000000),
+  riskLevel: integer("risk_level").notNull().default(3),
+  autoDetect: integer("auto_detect", { mode: "boolean" }).notNull().default(true),
+  manualStageId: text("manual_stage_id"), // autoDetect=false일 때 사용
+  updatedAt: text("updated_at").notNull(),
+});
+
+// 단계 전환 로그 (히스토리)
+export const stageTransitions = sqliteTable("stage_transitions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull(),
+  fromStage: text("from_stage"),
+  toStage: text("to_stage").notNull(),
+  reason: text("reason"),
+  confidence: real("confidence"),
+  createdAt: text("created_at").notNull(),
+});

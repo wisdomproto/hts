@@ -1,165 +1,145 @@
-import { RegimeExplorer } from "@/components/regime/regime-explorer";
+import Link from "next/link";
 import { GlassCard } from "@/components/shared/glass-card";
 import { SectionHeader } from "@/components/shared/section-header";
-import { DashboardPortfolioTabs } from "@/components/dashboard/dashboard-portfolio-tabs";
-import { ASSET_CLASS_COLORS_HEX, ASSET_CLASS_LABELS, DEFAULT_COUNTRIES } from "@/lib/constants";
-import { formatCurrencyFull, formatPercent, formatChange, formatRelativeTime } from "@/lib/format";
-import { REGIMES, REGIME_ALLOCATION_TEMPLATES } from "@/lib/regimes";
-import { getCurrentRegime, getLatestAllocation, getComputedIndicators, getRecentNews, getAllRegimes, getLiquiditySignals } from "@/lib/db";
-import type { RegimeId } from "@/types/regime";
-import type { AssetClass } from "@/types/portfolio";
-import { RegimeInfoPopup } from "@/components/regime/regime-info-popup";
+import { StageOrb } from "@/components/campaign/stage-orb";
+import { StageRoadmap } from "@/components/campaign/stage-roadmap";
+import { AllocationBreakdown } from "@/components/campaign/allocation-breakdown";
+import { SignalChips } from "@/components/campaign/signal-board";
+import { PlaybookCard } from "@/components/campaign/playbook-card";
+import { getCampaignState, getRecentNews } from "@/lib/db";
+import { STAGES } from "@/lib/stages";
+import { formatCurrency, formatRelativeTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const [currentRegime, allocationData, indicators, news, allRegimes, liquiditySignals] = await Promise.all([
-    getCurrentRegime("US"),
-    getLatestAllocation(),
-    getComputedIndicators(),
-    getRecentNews(5),
-    getAllRegimes(),
-    getLiquiditySignals(),
+function campaignProgress(startDate: string, endDate: string) {
+  const start = new Date(startDate).getTime();
+  const end = new Date(endDate).getTime();
+  const now = Date.now();
+  const total = Math.max(1, end - start);
+  const elapsed = Math.min(Math.max(0, now - start), total);
+  const pct = (elapsed / total) * 100;
+  const daysLeft = Math.max(0, Math.ceil((end - now) / 86_400_000));
+  return { pct, daysLeft };
+}
+
+export default async function CommandCenterPage() {
+  const [{ config, signals, assessment }, news] = await Promise.all([
+    getCampaignState(),
+    getRecentNews(4),
   ]);
 
-  const regimeId = (currentRegime?.regimeName ?? "goldilocks") as RegimeId;
-  const regime = REGIMES[regimeId] ?? REGIMES.goldilocks;
-
-  const { items: allocationItems } = allocationData;
-  const totalAmount = allocationData.allocation?.totalAmount ?? 100_000_000;
-
-  // Group indicators by country
-  const indicatorsByCountry = new Map<string, { growth?: number; inflation?: number }>();
-  for (const ind of indicators) {
-    const existing = indicatorsByCountry.get(ind.country) ?? {};
-    if (ind.axis === "growth") existing.growth = ind.value;
-    if (ind.axis === "inflation") existing.inflation = ind.value;
-    indicatorsByCountry.set(ind.country, existing);
-  }
-
-  // Group allocation by asset class for summary
-  const allocationByClass = new Map<string, number>();
-  for (const item of allocationItems) {
-    const current = allocationByClass.get(item.assetClass) ?? 0;
-    allocationByClass.set(item.assetClass, current + item.weightPct);
-  }
-  const allocatedPct = Array.from(allocationByClass.values()).reduce((a, b) => a + b, 0);
-  if (allocatedPct < 100) {
-    allocationByClass.set("cash", Math.round((100 - allocatedPct) * 100) / 100);
-  }
+  const stage = STAGES[assessment.stageId] ?? STAGES.meltup;
+  const { pct, daysLeft } = campaignProgress(config.startDate, config.endDate);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* [A] Regime Explorer — 8개 레짐 탭 */}
-      <RegimeExplorer currentRegimeId={regimeId} />
+      {/* [A] 단계 히어로 */}
+      <GlassCard className="!p-6">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          <StageOrb gradientFrom={stage.gradientFrom} gradientTo={stage.gradientTo} size={130} />
 
-      {/* [B] Country Indicators — horizontal strip */}
-      <div className="flex gap-3 overflow-x-auto pb-1">
-        {DEFAULT_COUNTRIES.map((country) => {
-          const data = indicatorsByCountry.get(country.code);
-          const cr = allRegimes[country.code];
-          const crName = cr?.regimeName as RegimeId | undefined;
-          const crObj = crName ? REGIMES[crName] : null;
-          return (
-            <GlassCard key={country.code} hover className="!p-3 shrink-0 min-w-[148px] flex-1">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className="text-base">{country.flag}</span>
-                <span className="text-sm font-medium text-text-primary">{country.nameKo}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-medium text-text-muted">
+                AI 버블 1년 작전 · {assessment.isAuto ? "자동 판정" : "수동 고정"}
+              </span>
+              <span className="text-xs font-mono text-text-muted">신뢰도 {assessment.confidence}%</span>
+            </div>
+            <h1 className="text-3xl font-bold" style={{ color: stage.gradientFrom }}>
+              {stage.nameKo}
+            </h1>
+            <p className="text-sm text-text-secondary mt-1">{stage.tagline}</p>
+
+            <div className="flex flex-wrap gap-2 mt-3">
+              <span
+                className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: `${stage.gradientFrom}22`, color: stage.gradientFrom }}
+              >
+                자세: {stage.postureKo}
+              </span>
+              {assessment.rationale.slice(0, 2).map((r, i) => (
+                <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-bg-overlay text-text-secondary">
+                  {r}
+                </span>
+              ))}
+            </div>
+
+            {/* 다음 수 */}
+            <div className="mt-4 p-3 rounded-lg bg-bg-overlay/70 border border-border-subtle/50">
+              <p className="text-xs text-text-muted mb-0.5">▶ 다음 단계까지</p>
+              <p className="text-sm text-text-primary">{assessment.distanceToNext}</p>
+            </div>
+          </div>
+
+          {/* 작전 진행도 */}
+          <div className="w-full lg:w-44 shrink-0">
+            <p className="text-xs text-text-muted mb-1">작전 진행도</p>
+            <div className="h-2 bg-bg-overlay rounded-full overflow-hidden mb-1">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${stage.gradientFrom}, ${stage.gradientTo})` }}
+              />
+            </div>
+            <p className="text-xs text-text-secondary font-mono">D-{daysLeft} 남음</p>
+            <div className="mt-3 space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">총 자본</span>
+                <span className="font-mono text-text-primary">{formatCurrency(config.totalCapital)}</span>
               </div>
-              {crObj && crName && (
-                <RegimeInfoPopup regimeId={crName}>
-                  <div
-                    className="text-[10px] px-1.5 py-0.5 rounded-full mb-1.5 inline-block cursor-pointer hover:opacity-80"
-                    style={{
-                      background: `linear-gradient(135deg, ${crObj.gradientFrom}20, ${crObj.gradientTo}20)`,
-                      color: crObj.gradientFrom,
-                    }}
-                  >
-                    {crObj.nameKo}
-                  </div>
-                </RegimeInfoPopup>
-              )}
-              <div className="space-y-0.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-text-muted">GDP</span>
-                  <span className={`font-mono ${data?.growth != null ? (data.growth > 0 ? "text-positive" : "text-negative") : "text-text-muted"}`}>
-                    {data?.growth != null ? formatChange(data.growth) : "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-text-muted">CPI</span>
-                  <span className={`font-mono ${data?.inflation != null ? (data.inflation > 3 ? "text-negative" : data.inflation > 2 ? "text-warning" : "text-positive") : "text-text-muted"}`}>
-                    {data?.inflation != null ? formatPercent(data.inflation) : "N/A"}
-                  </span>
-                </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-text-muted">기간</span>
+                <span className="font-mono text-text-secondary text-[11px]">
+                  {config.startDate} ~ {config.endDate}
+                </span>
               </div>
-            </GlassCard>
-          );
-        })}
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* [B] 5단계 로드맵 */}
+      <div>
+        <SectionHeader title="작전 타임라인" viewAllHref="/timeline" />
+        <StageRoadmap currentStageId={assessment.stageId} />
       </div>
 
-      {/* [C] + [D] Investment + Portfolio Summary */}
+      {/* [C] 배분 + 시그널 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GlassCard>
-          <h3 className="text-sm font-medium text-text-muted mb-3">투자 금액</h3>
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-3xl font-bold font-mono tabular-nums text-text-primary">
-              {formatCurrencyFull(totalAmount)}
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-text-primary">현재 단계 목표 배분</h3>
+            <Link href="/portfolio" className="text-xs text-accent hover:underline">
+              상세 →
+            </Link>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-bg-overlay rounded-lg p-3">
-              <p className="text-xs text-text-muted">자산 수</p>
-              <p className="text-lg font-semibold text-text-primary">{allocationItems.length}</p>
-            </div>
-            <div className="bg-bg-overlay rounded-lg p-3">
-              <p className="text-xs text-text-muted">현재 레짐</p>
-              <p className="text-sm font-semibold" style={{ color: regime.gradientFrom }}>
-                {regime.nameKo}
-              </p>
-            </div>
-            <div className="bg-bg-overlay rounded-lg p-3">
-              <p className="text-xs text-text-muted">국가</p>
-              <p className="text-lg font-semibold text-text-primary">{Object.keys(allRegimes).length}</p>
-            </div>
-          </div>
+          <AllocationBreakdown allocation={stage.allocation} totalCapital={config.totalCapital} />
         </GlassCard>
 
         <GlassCard>
-          <h3 className="text-sm font-medium text-text-muted mb-3">자산군별 배분</h3>
-          <div className="space-y-2.5">
-            {Array.from(allocationByClass.entries())
-              .sort((a, b) => b[1] - a[1])
-              .map(([cls, pct]) => (
-                <div key={cls} className="flex items-center gap-3">
-                  <span className="text-xs text-text-secondary w-14 shrink-0">
-                    {ASSET_CLASS_LABELS[cls as AssetClass]?.nameKo ?? cls}
-                  </span>
-                  <div className="flex-1 h-3 bg-bg-overlay rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pct}%`,
-                        backgroundColor: ASSET_CLASS_COLORS_HEX[cls as keyof typeof ASSET_CLASS_COLORS_HEX] ?? "#94a3b8",
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono tabular-nums text-text-primary w-10 text-right">
-                    {formatPercent(pct)}
-                  </span>
-                </div>
-              ))}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-text-primary">시그널 보드</h3>
+            <Link href="/signals" className="text-xs text-accent hover:underline">
+              상세 →
+            </Link>
+          </div>
+          <SignalChips signals={signals} />
+          <div className="mt-4 p-3 rounded-lg bg-bg-overlay/60">
+            <p className="text-xs text-text-muted mb-1">핵심 논리</p>
+            <p className="text-xs text-text-secondary leading-relaxed">{stage.thesis}</p>
           </div>
         </GlassCard>
       </div>
 
-      {/* [E] Portfolio Detail */}
+      {/* [D] 플레이북 */}
       <div>
-        <SectionHeader title="포트폴리오 배분 상세" viewAllHref="/portfolio" />
-        <DashboardPortfolioTabs items={allocationItems} totalAmount={totalAmount} />
+        <SectionHeader title={`${stage.nameKo} 플레이북`} />
+        <GlassCard>
+          <PlaybookCard playbook={stage.playbook} />
+        </GlassCard>
       </div>
 
-      {/* [F] News */}
+      {/* [E] 뉴스 */}
       <div>
         <SectionHeader title="최근 뉴스" viewAllHref="/news" />
         <GlassCard>
@@ -168,13 +148,26 @@ export default async function DashboardPage() {
           ) : (
             <div className="space-y-4">
               {news.map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-4 pb-4 border-b border-border-subtle/50 last:border-0 last:pb-0">
+                <div
+                  key={a.id}
+                  className="flex items-start justify-between gap-4 pb-4 border-b border-border-subtle/50 last:border-0 last:pb-0"
+                >
                   <div className="flex-1">
                     <p className="text-sm font-medium text-text-primary leading-relaxed">{a.title}</p>
                     {a.summary && <p className="text-xs text-text-secondary mt-1 line-clamp-2">{a.summary}</p>}
-                    <p className="text-xs text-text-muted mt-1">{a.source} &middot; {formatRelativeTime(a.publishedAt)}</p>
+                    <p className="text-xs text-text-muted mt-1">
+                      {a.source} &middot; {formatRelativeTime(a.publishedAt)}
+                    </p>
                   </div>
-                  <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${a.sentiment === "bullish" || a.sentiment === "very_bullish" ? "bg-positive" : a.sentiment === "bearish" || a.sentiment === "very_bearish" ? "bg-negative" : "bg-text-muted"}`} />
+                  <div
+                    className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+                      a.sentiment === "bullish" || a.sentiment === "very_bullish"
+                        ? "bg-positive"
+                        : a.sentiment === "bearish" || a.sentiment === "very_bearish"
+                          ? "bg-negative"
+                          : "bg-text-muted"
+                    }`}
+                  />
                 </div>
               ))}
             </div>

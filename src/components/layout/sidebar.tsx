@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
+  Crosshair,
+  Route,
+  Radar,
   PieChart,
   TrendingUp,
   Newspaper,
@@ -18,7 +20,9 @@ import {
 import { cn } from "@/lib/cn";
 
 const navItems = [
-  { href: "/", label: "대시보드", icon: LayoutDashboard },
+  { href: "/", label: "작전 본부", icon: Crosshair },
+  { href: "/timeline", label: "작전 타임라인", icon: Route },
+  { href: "/signals", label: "시그널 보드", icon: Radar },
   { href: "/portfolio", label: "포트폴리오", icon: PieChart },
   { href: "/backtest", label: "백테스트", icon: FlaskConical },
   { href: "/portfolio-settings", label: "포트폴리오 설정", icon: Settings },
