@@ -7,11 +7,18 @@ export const ROLE_META: Record<
   { nameKo: string; name: string; color: string; group: "offense" | "hedge"; desc: string }
 > = {
   semis: {
-    nameKo: "반도체 (구조적)",
-    name: "Semiconductors",
+    nameKo: "데이터센터 반도체",
+    name: "Datacenter Semis",
     color: "#3b82f6",
     group: "offense",
-    desc: "AI 적자에도 돈 버는 구조적 승자. 온디바이스 AI로 수요 지속.",
+    desc: "AI capex의 직접 수혜. 구조적 승자지만 capex 함수 — 버블 끝까지만 집중.",
+  },
+  edge_silicon: {
+    nameKo: "엣지/온디바이스 실리콘",
+    name: "Edge Silicon",
+    color: "#22d3ee",
+    group: "offense",
+    desc: "온디바이스 AI(NPU/SoC). 랠리 활주로 연장 + 다음 사이클 주도주.",
   },
   core_ai: {
     nameKo: "AI·빅테크 (투기)",
@@ -66,6 +73,7 @@ export const ROLE_META: Record<
 
 export const ROLE_ORDER: AssetRole[] = [
   "semis",
+  "edge_silicon",
   "core_ai",
   "broad",
   "crypto",
@@ -86,9 +94,12 @@ export type CampaignAsset = {
 };
 
 export const CAMPAIGN_ASSETS: CampaignAsset[] = [
-  // 반도체 (구조적 승자)
-  { ticker: "SMH", nameKo: "반도체 ETF (SMH)", role: "semis", weightInRole: 0.55, note: "반도체 광범위 노출 — 구조적 수요" },
-  { ticker: "NVDA", nameKo: "엔비디아 (NVDA)", role: "semis", weightInRole: 0.45, note: "AI 가속기 독점적 지위" },
+  // 데이터센터 반도체 (구조적 승자, capex 함수)
+  { ticker: "SMH", nameKo: "반도체 ETF (SMH)", role: "semis", weightInRole: 0.6, note: "반도체 광범위 노출 — 단일종목 리스크 분산" },
+  { ticker: "NVDA", nameKo: "엔비디아 (NVDA)", role: "semis", weightInRole: 0.4, note: "AI 가속기 선두 — 단일종목 비중 캡" },
+  // 엣지/온디바이스 실리콘
+  { ticker: "QCOM", nameKo: "퀄컴 (QCOM)", role: "edge_silicon", weightInRole: 0.6, note: "스냅드래곤 NPU — 온디바이스 AI 선두" },
+  { ticker: "ARM", nameKo: "ARM 홀딩스 (ARM)", role: "edge_silicon", weightInRole: 0.4, note: "온디바이스 AI IP — 칩 설계 로열티" },
   // AI·빅테크 (투기)
   { ticker: "QQQ", nameKo: "나스닥 100 (QQQ)", role: "core_ai", weightInRole: 0.65, note: "AI·빅테크 집약 거품 탑승" },
   { ticker: "IGV", nameKo: "소프트웨어 ETF (IGV)", role: "core_ai", weightInRole: 0.35, note: "AI 소프트웨어 — 정점에서 먼저 트림" },

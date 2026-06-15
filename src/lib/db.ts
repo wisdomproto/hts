@@ -11,6 +11,7 @@ import {
   historicalPrices,
   campaign,
   stageTransitions,
+  capexData,
 } from "@db/schema";
 import { desc, eq } from "drizzle-orm";
 import { deriveRegimeName } from "@/lib/regimes";
@@ -19,6 +20,7 @@ import { determineStage, STAGES } from "@/lib/stages";
 import type {
   CampaignConfig,
   SignalReading,
+  SignalStatus,
   StageAssessment,
   StageId,
   StageTransition,
@@ -257,13 +259,85 @@ async function getLatestEconomicValue(seriesId: string): Promise<{ value: number
   }
 }
 
-/** DB 데이터로 5개 시그널 산출. 데이터 없으면 unknown. */
+/** 하이퍼스케일러 capex YoY 증가율 + 가속/감속 → 시그널 1개 */
+async function getCapexReading(): Promise<{ value: number | null; status: SignalStatus; asOf: string | null }> {
+  let rows: { company: string; period: string; capex: number }[];
+  try {
+    rows = await db
+      .select({ company: capexData.company, period: capexData.period, capex: capexData.capex })
+      .from(capexData);
+  } catch {
+    return { value: null, status: "unknown", asOf: null };
+  }
+  if (rows.length === 0) return { value: null, status: "unknown", asOf: null };
+
+  // 캘린더 분기별 합계 (MSFT 등 회계분기도 캘린더 분기말에 정렬됨)
+  const byQuarter = new Map<string, { sum: number; count: number; end: string }>();
+  for (const r of rows) {
+    const d = new Date(r.period);
+    const key = `${d.getUTCFullYear()}-Q${Math.floor(d.getUTCMonth() / 3) + 1}`;
+    const e = byQuarter.get(key) ?? { sum: 0, count: 0, end: r.period };
+    e.sum += r.capex;
+    e.count += 1;
+    if (r.period > e.end) e.end = r.period;
+    byQuarter.set(key, e);
+  }
+
+  const totalOf = (key: string): number | undefined => {
+    const e = byQuarter.get(key);
+    return e && e.count >= 3 ? e.sum : undefined;
+  };
+  const prevYearKey = (key: string) => {
+    const [y, q] = key.split("-");
+    return `${Number(y) - 1}-${q}`;
+  };
+  const prevQuarterKey = (key: string) => {
+    const [y, q] = key.split("-Q");
+    const qn = Number(q);
+    return qn > 1 ? `${y}-Q${qn - 1}` : `${Number(y) - 1}-Q4`;
+  };
+  const yoyOf = (key: string): number | null => {
+    const cur = totalOf(key);
+    const prev = totalOf(prevYearKey(key));
+    if (cur == null || prev == null || prev === 0) return null;
+    return ((cur - prev) / prev) * 100;
+  };
+
+  const validKeys = [...byQuarter.entries()]
+    .filter(([, v]) => v.count >= 3)
+    .map(([k]) => k)
+    .sort((a, b) => {
+      const oa = Number(a.split("-Q")[0]) * 4 + Number(a.split("-Q")[1]);
+      const ob = Number(b.split("-Q")[0]) * 4 + Number(b.split("-Q")[1]);
+      return oa - ob;
+    });
+  if (validKeys.length === 0) return { value: null, status: "unknown", asOf: null };
+
+  const latestKey = validKeys[validKeys.length - 1];
+  const yoyNow = yoyOf(latestKey);
+  const yoyPrev = yoyOf(prevQuarterKey(latestKey));
+  const accel = yoyNow != null && yoyPrev != null ? yoyNow - yoyPrev : null;
+  const asOf = byQuarter.get(latestKey)?.end ?? null;
+
+  let status: SignalStatus = "unknown";
+  if (yoyNow != null) {
+    if (yoyNow < 0) status = "stress";
+    else if (accel != null && accel <= -8) status = "caution";
+    else if (yoyNow >= 40) status = "euphoric";
+    else status = "healthy";
+  }
+
+  return { value: yoyNow, status, asOf };
+}
+
+/** DB 데이터로 6개 시그널 산출. 데이터 없으면 unknown. */
 export async function computeStageSignals(): Promise<SignalReading[]> {
-  const [qqq, vix, hy, liq] = await Promise.all([
+  const [qqq, vix, hy, liq, capex] = await Promise.all([
     getPriceSeries("QQQ"),
     getPriceSeries("^VIX", 5),
     getLatestEconomicValue(HY_SPREAD_SERIES),
     getRealTimeLiquidityState(),
+    getCapexReading(),
   ]);
 
   // 나스닥 추세 (200일선 이격도) + 고점 대비 낙폭
@@ -290,6 +364,7 @@ export async function computeStageSignals(): Promise<SignalReading[]> {
     buildReading("drawdown", ddVal, priceAsOf),
     buildReading("volatility", vixVal, vixAsOf),
     buildReading("credit_spread", hy?.value ?? null, hy?.date ?? null),
+    buildReading("hyperscaler_capex", capex.value, capex.asOf, capex.status),
     buildReading("liquidity", liq === "expanding" ? 1 : 0, null, liq === "expanding" ? "healthy" : "caution"),
   ];
 }

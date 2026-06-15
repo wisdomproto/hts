@@ -5,14 +5,14 @@ function formatValue(r: SignalReading): string {
   if (r.value == null) return "—";
   if (r.id === "liquidity") return r.status === "healthy" ? "확장" : "수축";
   const decimals = r.id === "volatility" ? 0 : 1;
-  const sign = r.id === "nasdaq_trend" && r.value > 0 ? "+" : "";
+  const sign = (r.id === "nasdaq_trend" || r.id === "hyperscaler_capex") && r.value > 0 ? "+" : "";
   return `${sign}${r.value.toFixed(decimals)}${r.unit}`;
 }
 
 /** 컴팩트 시그널 칩 (대시보드용) */
 export function SignalChips({ signals }: { signals: SignalReading[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
       {signals.map((s) => {
         const meta = SIGNAL_STATUS_META[s.status];
         return (

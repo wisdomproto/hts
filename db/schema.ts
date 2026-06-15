@@ -225,3 +225,12 @@ export const stageTransitions = sqliteTable("stage_transitions", {
   confidence: real("confidence"),
   createdAt: text("created_at").notNull(),
 });
+
+// 하이퍼스케일러 분기별 capex (SEC EDGAR XBRL 원천, 분기 단위로 디큐뮬레이션)
+export const capexData = sqliteTable("capex_data", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  company: text("company").notNull(), // 티커 (MSFT/GOOGL/AMZN/META)
+  period: text("period").notNull(), // 분기말 날짜 YYYY-MM-DD
+  capex: real("capex").notNull(), // USD, 분기 단위
+  fetchedAt: text("fetched_at").notNull(),
+});

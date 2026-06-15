@@ -23,6 +23,11 @@ DEFAULT_TICKERS = [
 # Benchmark tickers
 BENCHMARK_TICKERS = ["SPY"]
 
+# AI 버블 1년 작전 시그널/유니버스용 티커
+# ^VIX: 변동성 시그널 | QQQ: 나스닥 추세·낙폭 시그널(이미 포함)
+# NVDA/SMH: 데이터센터 반도체 | QCOM/ARM: 엣지 실리콘 | IGV: AI 소프트웨어
+CAMPAIGN_TICKERS = ["^VIX", "NVDA", "SMH", "QCOM", "ARM", "IGV", "BIL"]
+
 
 def init_price_table(conn: sqlite3.Connection):
     """Create historical_prices table if it doesn't exist."""
@@ -139,7 +144,7 @@ def fetch_all_prices(
 ):
     """Fetch prices for all portfolio tickers."""
     if tickers is None:
-        tickers = list(set(DEFAULT_TICKERS + BENCHMARK_TICKERS))
+        tickers = list(set(DEFAULT_TICKERS + BENCHMARK_TICKERS + CAMPAIGN_TICKERS))
 
     conn = sqlite3.connect(DB_PATH)
     init_price_table(conn)

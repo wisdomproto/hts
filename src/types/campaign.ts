@@ -17,7 +17,8 @@ export type StagePosture =
 
 // 자산 역할 (AI/테크 집중 + 헤지)
 export type AssetRole =
-  | "semis" // 반도체 — 구조적 승자 (최장기 보유)
+  | "semis" // 데이터센터 반도체 — 구조적 승자 (capex 함수)
+  | "edge_silicon" // 엣지/온디바이스 실리콘 — 활주로 연장 + 다음 사이클 주도
   | "core_ai" // AI 소프트웨어/빅테크 — 투기적 거품 탑승
   | "broad" // 광범위 주식 (S&P 등)
   | "crypto" // 암호화폐 — 고베타 공격
@@ -58,6 +59,7 @@ export type SignalId =
   | "drawdown" // 고점 대비 낙폭
   | "volatility" // VIX 변동성
   | "credit_spread" // 하이일드 신용 스프레드
+  | "hyperscaler_capex" // 하이퍼스케일러 capex 증가율 (선행 천장 신호)
   | "liquidity"; // 유동성 배경 (3-of-5)
 
 export type SignalStatus =

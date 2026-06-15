@@ -60,13 +60,21 @@ hts/
   서사: "멜트업 라이드 → 탈출 → 폭락 매수". 투자 유니버스는 AI/테크 집중 + 헤지.
 - **단계 정의 SSOT**: `src/lib/stages.ts` → `STAGES`, `STAGE_ORDER`, `determineStage()`(순수 함수, 신호→단계 자동 판정)
 - **시그널 SSOT**: `src/lib/signals.ts` → `SIGNAL_DEFS`, `buildReading()`, `classifySignal()`
-  - 5개 신호: 나스닥 200일선 이격도, 고점 대비 낙폭(52주), VIX, 하이일드 스프레드, 유동성 배경(3-of-5 재활용)
-- **유니버스 SSOT**: `src/lib/campaign-universe.ts` → `ROLE_META`, `CAMPAIGN_ASSETS`(역할: semis/core_ai/broad/crypto/hedge_*)
-- **데이터 계층**: `db.ts`의 `getCampaignState()` = 설정 + `computeStageSignals()`(historical_prices/economic_data 기반) + `determineStage()` + 전환 이력
-- **DB**: `campaign`(작전 설정 단일 행), `stage_transitions`(전환 이력). 단계 배분/트리거는 DB가 아닌 TS(`stages.ts`)에 둠.
+  - 6개 신호: 나스닥 200일선 이격도, 고점 대비 낙폭(52주), VIX, 하이일드 스프레드,
+    **하이퍼스케일러 capex 증가율(선행 천장 신호)**, 유동성 배경(3-of-5 재활용)
+  - capex 신호는 가격(후행)보다 앞서 멜트업→분산 전환을 트리거하는 선행 지표
+- **유니버스 SSOT**: `src/lib/campaign-universe.ts` → `ROLE_META`, `CAMPAIGN_ASSETS`
+  - 역할: semis(데이터센터 반도체)/**edge_silicon(엣지·온디바이스)**/core_ai/broad/crypto/hedge_*
+  - 반도체=capex 함수(버블 끝까지만), 엣지 실리콘=활주로 연장+다음 사이클(후반 단계 비중↑)
+- **데이터 계층**: `db.ts`의 `getCampaignState()` = 설정 + `computeStageSignals()` + `determineStage()` + 전환 이력
+  - 시그널 원천: historical_prices(QQQ/^VIX), economic_data(HY 스프레드), capex_data(EDGAR), 유동성
+  - `getCapexReading()`이 capex_data를 캘린더 분기별 합산 → YoY·가속(2차 미분) 계산
+- **DB**: `campaign`(설정 단일 행), `stage_transitions`(전환 이력), `capex_data`(분기별 capex). 단계 배분/트리거는 DB가 아닌 TS(`stages.ts`).
 - **페이지**: `/`(작전 본부), `/timeline`(5단계 로드맵), `/signals`(시그널 보드)
+- **Python**: `fetch_prices.py`(작전 티커 ^VIX/NVDA/SMH/QCOM/ARM/IGV 추가), `fetch_capex.py`(SEC EDGAR XBRL,
+  YTD→분기 디큐뮬레이션). `run_pipeline.py`에 통합(7단계).
 - 기존 8레짐 엔진은 폐기하지 않고 **내부 유동성 배경 신호**로 재활용(`getRealTimeLiquidityState`).
-- Phase 2(예정): Python에서 QQQ/^VIX/NVDA/SMH 가격 수집 + 단계 자동화, 작전 설정 페이지.
+- Phase 3(예정): 단계 자동 기록(stage_transitions 자동화), 작전 설정 페이지, 백테스트→시나리오 시뮬레이터.
 
 ### 레짐 판정 (Single Source of Truth)
 - **TypeScript**: `src/lib/regimes.ts` → `REGIME_NAMES`, `deriveRegimeName()`

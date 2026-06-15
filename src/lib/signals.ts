@@ -119,6 +119,30 @@ export const SIGNAL_DEFS: Record<SignalId, SignalDef> = {
               ? "신용 경색 — 붕괴 신호"
               : "신용 위기 — 시스템 스트레스",
   },
+  hyperscaler_capex: {
+    id: "hyperscaler_capex",
+    name: "Hyperscaler Capex",
+    nameKo: "하이퍼스케일러 capex 증가율 (YoY)",
+    unit: "%",
+    bands: [
+      { label: "40%↑ 과열 지출", status: "euphoric" },
+      { label: "가속·견조", status: "healthy" },
+      { label: "둔화 — 선행 천장", status: "caution" },
+      { label: "역성장 — 붕괴 신호", status: "stress" },
+    ],
+    // 레벨 기준 기본 분류 (가속/감속은 db.ts에서 statusOverride로 보정)
+    classify: (v) => (v >= 40 ? "euphoric" : v >= 15 ? "healthy" : v >= 0 ? "caution" : "stress"),
+    detail: (v, s) =>
+      v == null
+        ? "SEC EDGAR capex 데이터 필요 (MSFT·GOOGL·AMZN·META)"
+        : s === "euphoric"
+          ? "과열적 capex 지출 — 반도체 수요 정점 신호일 수 있음"
+          : s === "healthy"
+            ? "capex 가속 — 반도체 수요 견조, 멜트업 지지"
+            : s === "caution"
+              ? "capex 증가율 둔화 — 가격보다 앞선 천장 신호"
+              : "capex 역성장 — 반도체 수요 둔화, 붕괴 임박",
+  },
   liquidity: {
     id: "liquidity",
     name: "Liquidity Backdrop",

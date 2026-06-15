@@ -29,19 +29,20 @@ export const STAGES: Record<StageId, Stage> = {
     gradientFrom: "#10b981",
     gradientTo: "#34d399",
     allocation: {
-      semis: 32,
-      core_ai: 20,
-      broad: 13,
-      crypto: 13,
+      semis: 28,
+      edge_silicon: 6,
+      core_ai: 18,
+      broad: 12,
+      crypto: 12,
       hedge_cash: 12,
-      hedge_gold: 10,
+      hedge_gold: 12,
       hedge_bond: 0,
       hedge_inverse: 0,
     },
     entryTriggers: [
       "고점 대비 낙폭 5% 미만 (상승 추세 유지)",
       "나스닥 200일선 위, VIX 안정권(<20)",
-      "유동성 확장 + 신용 스프레드 안정",
+      "하이퍼스케일러 capex 가속 + 유동성 확장",
     ],
     playbook: {
       do: [
@@ -71,19 +72,20 @@ export const STAGES: Record<StageId, Stage> = {
     gradientFrom: "#f59e0b",
     gradientTo: "#fbbf24",
     allocation: {
-      semis: 22,
-      core_ai: 10,
-      broad: 8,
+      semis: 18,
+      edge_silicon: 8,
+      core_ai: 9,
+      broad: 7,
       crypto: 5,
-      hedge_cash: 33,
+      hedge_cash: 31,
       hedge_gold: 14,
       hedge_bond: 8,
       hedge_inverse: 0,
     },
     entryTriggers: [
+      "하이퍼스케일러 capex 증가율 둔화 (선행 천장 신호)",
       "200일선 이격도 15%↑ & VIX 16↓ (과도한 안일)",
-      "고점 대비 낙폭 5~12% (초기 천장)",
-      "온디바이스 AI 보편화 → 성능 임계점 도달 서사",
+      "온디바이스 AI 보편화 → 클라우드 수요 정점 서사",
     ],
     playbook: {
       do: [
@@ -113,11 +115,12 @@ export const STAGES: Record<StageId, Stage> = {
     gradientFrom: "#dc2626",
     gradientTo: "#ef4444",
     allocation: {
-      semis: 8,
+      semis: 6,
+      edge_silicon: 3,
       core_ai: 2,
       broad: 0,
       crypto: 0,
-      hedge_cash: 48,
+      hedge_cash: 47,
       hedge_gold: 17,
       hedge_bond: 17,
       hedge_inverse: 8,
@@ -155,14 +158,15 @@ export const STAGES: Record<StageId, Stage> = {
     gradientFrom: "#7c3aed",
     gradientTo: "#a855f7",
     allocation: {
-      semis: 25,
-      core_ai: 15,
-      broad: 10,
+      semis: 22,
+      edge_silicon: 12,
+      core_ai: 13,
+      broad: 9,
       crypto: 8,
-      hedge_cash: 25,
+      hedge_cash: 23,
       hedge_gold: 10,
-      hedge_bond: 5,
-      hedge_inverse: 2,
+      hedge_bond: 3,
+      hedge_inverse: 0,
     },
     entryTriggers: [
       "고점 대비 낙폭 30%↑ 또는 VIX 38↑ (패닉)",
@@ -197,12 +201,13 @@ export const STAGES: Record<StageId, Stage> = {
     gradientFrom: "#06b6d4",
     gradientTo: "#22d3ee",
     allocation: {
-      semis: 32,
-      core_ai: 22,
-      broad: 13,
-      crypto: 12,
-      hedge_cash: 11,
-      hedge_gold: 8,
+      semis: 26,
+      edge_silicon: 16,
+      core_ai: 18,
+      broad: 11,
+      crypto: 11,
+      hedge_cash: 10,
+      hedge_gold: 6,
       hedge_bond: 2,
       hedge_inverse: 0,
     },
@@ -266,12 +271,13 @@ export function determineStage(
   const trend = val(map, "nasdaq_trend"); // 200일선 이격도 %
   const hy = val(map, "credit_spread");
   const liqExpanding = map.liquidity?.status === "healthy";
+  const capexStatus = map.hyperscaler_capex?.status; // 선행 신호: healthy/euphoric=가속, caution=둔화, stress=역성장
 
   const rationale: string[] = [];
   const hasPriceData = dd != null || vix != null || trend != null;
 
   // 데이터가 거의 없으면 저신뢰 멜트업
-  if (!hasPriceData && hy == null) {
+  if (!hasPriceData && hy == null && capexStatus == null) {
     return {
       stageId: previousStageId ?? "meltup",
       confidence: 20,
@@ -312,13 +318,23 @@ export function determineStage(
     rationale.push("붕괴 이후 시장 안정화 — 추세 회복 국면");
     if (trend != null) rationale.push(`나스닥 200일선 이격도 ${trend.toFixed(0)}%`);
   }
-  // 4) 분산/정점경계 — 유포리아 또는 초기 천장
+  // 4) 분산/정점경계 — capex 둔화(선행) 또는 유포리아/초기 천장
   else if (
+    capexStatus === "caution" ||
+    capexStatus === "stress" ||
     (trend != null && trend >= 15 && vix != null && vix <= 16) ||
     (dd != null && dd >= 5)
   ) {
     stageId = "distribution";
     confidence = 64;
+    if (capexStatus === "caution") {
+      rationale.push("하이퍼스케일러 capex 증가율 둔화 — 선행 천장 신호");
+      confidence = 70; // 선행 신호는 신뢰도 가중
+    }
+    if (capexStatus === "stress") {
+      rationale.push("하이퍼스케일러 capex 역성장 — 반도체 수요 둔화 임박");
+      confidence = 74;
+    }
     if (trend != null && trend >= 15) rationale.push(`200일선 이격도 +${trend.toFixed(0)}% — 과열`);
     if (vix != null && vix <= 16) rationale.push(`VIX ${vix.toFixed(0)} — 과도한 안일함`);
     if (dd != null && dd >= 5) rationale.push(`고점 대비 낙폭 ${dd.toFixed(0)}% — 초기 천장`);
@@ -341,6 +357,16 @@ export function determineStage(
     rationale.push("유동성 수축 배경 — 방어 강화");
   }
 
+  // capex 가속 보강 (멜트업/회복 신뢰도)
+  if ((capexStatus === "healthy" || capexStatus === "euphoric") && (stageId === "meltup" || stageId === "recovery")) {
+    confidence = Math.min(95, confidence + 6);
+    rationale.push("하이퍼스케일러 capex 가속 — 반도체 수요 견조");
+  }
+  if (capexStatus === "stress" && stageId === "crash") {
+    confidence = Math.min(95, confidence + 6);
+    rationale.push("capex 역성장 — 붕괴 신호 강화");
+  }
+
   const nid = nextStageId(stageId);
   const distanceToNext = describeDistance(stageId, { dd, vix, trend, hy });
 
@@ -361,8 +387,8 @@ function describeDistance(
   switch (stageId) {
     case "meltup":
       return s.trend != null
-        ? `200일선 이격도 15%↑ & VIX 16↓ 시 분산 단계로 (현재 이격도 ${s.trend.toFixed(0)}%)`
-        : "이격도 15%↑ / 낙폭 5%↑ 시 분산 단계로";
+        ? `capex 둔화 또는 이격도 15%↑·VIX 16↓ 시 분산 단계로 (현재 이격도 ${s.trend.toFixed(0)}%)`
+        : "하이퍼스케일러 capex 둔화 / 이격도 15%↑ / 낙폭 5%↑ 시 분산 단계로";
     case "distribution":
       return s.dd != null
         ? `고점 대비 낙폭 12%↑ 시 붕괴 단계로 (현재 ${s.dd.toFixed(0)}%)`

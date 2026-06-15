@@ -28,7 +28,7 @@ def run_full_pipeline():
     conn = sqlite3.connect(DB_PATH)
 
     # Step 1: Fetch FRED data
-    print("\n[1/5] Fetching FRED economic data...")
+    print("\n[1/7] Fetching FRED economic data...")
     try:
         from fetch_fred import fetch_all_series
         records = fetch_all_series()
@@ -38,7 +38,7 @@ def run_full_pipeline():
         log_pipeline(conn, "fetch_fred", "failed")
 
     # Step 2: Compute indicators
-    print("\n[2/5] Computing indicators...")
+    print("\n[2/7] Computing indicators...")
     try:
         from compute_indicators import compute_all
         indicator_results = compute_all()
@@ -49,7 +49,7 @@ def run_full_pipeline():
         indicator_results = {}
 
     # Step 3: Determine regimes
-    print("\n[3/5] Determining regimes...")
+    print("\n[3/7] Determining regimes...")
     try:
         from determine_regime import determine_all_regimes
         regimes = determine_all_regimes(indicator_results)
@@ -59,8 +59,28 @@ def run_full_pipeline():
         log_pipeline(conn, "determine_regime", "failed")
         regimes = {"US": "goldilocks"}
 
-    # Step 4: Fetch news
-    print("\n[4/5] Fetching news...")
+    # Step 4: Fetch prices (작전 시그널/유니버스용 — QQQ/^VIX/반도체/엣지 등)
+    print("\n[4/7] Fetching prices (campaign signals)...")
+    try:
+        from fetch_prices import fetch_all_prices
+        price_count = fetch_all_prices()
+        log_pipeline(conn, "fetch_prices", "success", price_count)
+    except Exception as e:
+        print(f"  FAILED: {e}")
+        log_pipeline(conn, "fetch_prices", "failed")
+
+    # Step 5: Fetch hyperscaler capex (선행 천장 시그널, SEC EDGAR)
+    print("\n[5/7] Fetching hyperscaler capex (SEC EDGAR)...")
+    try:
+        from fetch_capex import fetch_all_capex
+        capex_count = fetch_all_capex()
+        log_pipeline(conn, "fetch_capex", "success", capex_count)
+    except Exception as e:
+        print(f"  FAILED: {e}")
+        log_pipeline(conn, "fetch_capex", "failed")
+
+    # Step 6: Fetch news
+    print("\n[6/7] Fetching news...")
     try:
         from fetch_news import fetch_all_news
         news_count = fetch_all_news()
@@ -69,8 +89,8 @@ def run_full_pipeline():
         print(f"  FAILED: {e}")
         log_pipeline(conn, "fetch_news", "failed")
 
-    # Step 5: Summarize news with Gemini
-    print("\n[5/5] Summarizing news with AI...")
+    # Step 7: Summarize news with Gemini
+    print("\n[7/7] Summarizing news with AI...")
     try:
         from summarize_news import summarize_articles
         summaries = summarize_articles(limit=10)
